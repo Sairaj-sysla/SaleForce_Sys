@@ -1,0 +1,25 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Secrets — Gmail OAuth client, token, local env
+credentials.json
+token.json
+.env
+.env.*
+!.env.example
+
+# Generated run output — may contain usernames, step logs or screenshots
+logs/
+allure-results/
+allure-report/
+enterprise-report/
+reporting-labs/
+reports/results.xml
+reports/prereq-state.json
+dist/

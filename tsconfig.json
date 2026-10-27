@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    "target":             "ES2020",
+    "module":             "commonjs",
+    "lib":                ["ES2020", "DOM"],
+    "moduleResolution":   "node",
+    "ignoreDeprecations": "6.0",
+    "resolveJsonModule":  true,
+    "isolatedModules":    false,
+    "skipLibCheck":       true,
+    "esModuleInterop":    true,
+    "allowJs":            false,
+
+    "strict":             true,
+    "noImplicitAny":      true,
+    "strictNullChecks":   true,
+    "noUnusedLocals":     false,
+    "noUnusedParameters": false,
+    "noImplicitReturns":  true,
+
+    "outDir":             "./dist",
+    "rootDir":            ".",
+    "sourceMap":          true,
+    "declaration":        true,
+    "declarationMap":     true,
+
+    "baseUrl": ".",
+
+    "typeRoots": ["./node_modules/@types"],
+
+    "types": ["node"],
+
+ "paths": {
+  "@pages/*": ["./src/pages/*"],
+  "@helpers/*": ["./src/helpers/*"],
+  "@modules/*": ["./src/Modules/*"],
+  "@utils/*": ["./src/utils/*"],
+  "@config/*": ["./src/config/*"],
+  "@fixtures/*": ["./src/fixtures/*"],
+  "@tests/*": ["./test/*"]
+}
+  },
+
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "playwright.config.ts"
+, "testdata/testDataManager.ts"  ],
+
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

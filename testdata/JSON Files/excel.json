@@ -1,0 +1,63 @@
+[
+  {
+    "id": 1,
+    "testDataName": "Orange_Login_Data",
+    "description": "Login sheet validation for OrangeHRM",
+    "filePath": "excelDataFiles/Sample_TestData.xlsx",
+    "sheet": "LoginTestData",
+    "cells": [
+      { "row": 2, "column": "Username", "expected": "admin",    "mandatory": true },
+      { "row": 2, "column": "Password", "expected": "admin123", "mandatory": true }
+    ],
+    "formulas": [
+      {
+        "row": 2,
+        "column": "TotalPrice",
+        "formula": "=D2*E2",
+        "expected": 100000,
+        "mandatory": true,
+        "inputs": {
+          "D2": { "columnName": "UnitPrice", "value": 50000 },
+          "E2": { "columnName": "Quantity",  "value": 2 }
+        }
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "testDataName": "Purchase_Order_Data",
+    "description": "Purchase order sheet — no validations yet",
+    "filePath": "excelDataFiles/Sample_TestData.xlsx",
+    "sheet": "PurchaseOrderData",
+    "cells": [],
+    "formulas": []
+  },
+  {
+    "id": 3,
+    "testDataName": "Soft_Check_Data",
+    "description": "Non-mandatory checks — warns only, never throws",
+    "filePath": "excelDataFiles/Sample_TestData.xlsx",
+    "sheet": "LoginTestData",
+    "cells": [
+      {
+        "row": 3,
+        "column": "Username",
+        "expected": "WRONG_ON_PURPOSE",
+        "mandatory": false
+      }
+    ],
+    "formulas": [
+      {
+        "row": 3,
+        "column": "TotalPrice",
+        "formula": "=D3*E3",
+        "expected": 999999,
+        "mandatory": false,
+        "inputs": {
+          "D3": { "columnName": "UnitPrice", "value": 50000 },
+          "E3": { "columnName": "Quantity",  "value": 2 }
+        }
+      }
+    ]
+  }
+]

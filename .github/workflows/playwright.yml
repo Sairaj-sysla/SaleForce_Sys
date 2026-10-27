@@ -1,0 +1,156 @@
+# ============================================================================
+#  Salesforce login (Gmail OTP) on a GitHub-hosted runner — headless.
+#  Uses the existing framework: test/saleforce.spec.ts → src/Modules/saleForceLogin.ts
+#  → src/utils/gmailOtp.ts. Secrets setup: see README.md → "Running on GitHub Actions".
+# ============================================================================
+name: Salesforce Login (Gmail OTP)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_login:
+        description: "Run the live Salesforce login test (sends a real OTP email)"
+        type: boolean
+        default: true
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+# One live login at a time — parallel runs would race for the same OTP inbox.
+concurrency:
+  group: salesforce-gmail-otp-login
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24"
+  CI: "true"
+  HEADLESS: "true"
+
+jobs:
+  # ── OTP utility unit tests — synthetic emails, no secrets, no browser ─────
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ENVIRONMENT: dev
+      # Unit tests never log in; placeholders satisfy config validation only.
+      PLAYWRIGHT_USERNAME: unit-test-placeholder
+      PLAYWRIGHT_PASSWORD: unit-test-placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Gmail OTP unit tests
+        run: npx playwright test test/unit --project=chromium
+
+      - name: Upload unit test report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: |
+            playwright-report/
+            reports/results.xml
+          retention-days: 7
+
+  # ── Live Salesforce login with Gmail OTP ───────────────────────────────────
+  salesforce-login:
+    needs: unit-tests
+    # Secrets are unavailable to fork PRs — skip there. Manual runs honour the input.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.run_login) ||
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ENVIRONMENT: dev
+      GMAIL_OTP_NONINTERACTIVE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium + system dependencies
+        run: npx playwright install --with-deps chromium
+
+      # Prints only variable names / pass-fail — never values.
+      - name: Validate required secrets
+        env:
+          BASE_URL:            ${{ secrets.SALESFORCE_BASE_URL }}
+          PLAYWRIGHT_USERNAME: ${{ secrets.SALESFORCE_USERNAME }}
+          PLAYWRIGHT_PASSWORD: ${{ secrets.SALESFORCE_PASSWORD }}
+          GMAIL_TOKEN_JSON:    ${{ secrets.GMAIL_TOKEN_JSON }}
+        run: |
+          missing=""
+          [ -n "$BASE_URL" ]            || missing="$missing SALESFORCE_BASE_URL"
+          [ -n "$PLAYWRIGHT_USERNAME" ] || missing="$missing SALESFORCE_USERNAME"
+          [ -n "$PLAYWRIGHT_PASSWORD" ] || missing="$missing SALESFORCE_PASSWORD"
+          [ -n "$GMAIL_TOKEN_JSON" ]    || missing="$missing GMAIL_TOKEN_JSON"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+          [ "$ENVIRONMENT" = "dev" ] || { echo "::error::ENVIRONMENT must be dev"; exit 1; }
+          node -e '
+            const host = new URL(process.env.BASE_URL).hostname;
+            if (!/(^|\.)(salesforce\.com|force\.com)$/i.test(host)) {
+              console.log("::error::SALESFORCE_BASE_URL is not a Salesforce domain"); process.exit(1);
+            }
+            const raw = process.env.GMAIL_TOKEN_JSON.trim();
+            let tok;
+            try { tok = JSON.parse(raw.startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8")); }
+            catch { console.log("::error::GMAIL_TOKEN_JSON is not valid JSON or base64 JSON"); process.exit(1); }
+            if (!tok.refresh_token) { console.log("::error::GMAIL_TOKEN_JSON has no refresh_token"); process.exit(1); }
+            console.log("Secrets present and well-formed.");
+          '
+
+      - name: Run Salesforce login test (headless)
+        env:
+          BASE_URL:                   ${{ secrets.SALESFORCE_BASE_URL }}
+          SALESFORCE_EXPECTED_HOST:   ${{ secrets.SALESFORCE_EXPECTED_HOST }}
+          PLAYWRIGHT_USERNAME:        ${{ secrets.SALESFORCE_USERNAME }}
+          PLAYWRIGHT_PASSWORD:        ${{ secrets.SALESFORCE_PASSWORD }}
+          GMAIL_TOKEN_JSON:           ${{ secrets.GMAIL_TOKEN_JSON }}
+          GMAIL_CREDENTIALS_JSON:     ${{ secrets.GMAIL_CREDENTIALS_JSON }}
+          GMAIL_OTP_SENDER:           ${{ secrets.GMAIL_OTP_SENDER }}
+          GMAIL_OTP_SUBJECT:          ${{ secrets.GMAIL_OTP_SUBJECT }}
+          GMAIL_OTP_TIMEOUT_MS:       ${{ secrets.GMAIL_OTP_TIMEOUT_MS }}
+          GMAIL_OTP_POLL_INTERVAL_MS: ${{ secrets.GMAIL_OTP_POLL_INTERVAL_MS }}
+          GMAIL_OTP_PATTERN:          ${{ secrets.GMAIL_OTP_PATTERN }}
+        # --retries=0: a retry would trigger a second login + OTP email.
+        run: npx playwright test test/saleforce.spec.ts --project=chromium --retries=0
+
+      # Traces/videos/screenshots can show typed values — keep retention short
+      # and the repository private.
+      - name: Upload reports, screenshots and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: salesforce-login-results
+          path: |
+            playwright-report/
+            test-results/
+            enterprise-report/
+            allure-results/
+            reports/results.xml
+            logs/
+          if-no-files-found: ignore
+          retention-days: 7

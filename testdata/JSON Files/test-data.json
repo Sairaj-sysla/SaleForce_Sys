@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "testDataName": "Orange_Login_Data",
+    "data": [
+      { "Username": "Admin", "Password": "admin123" }
+    ],
+    "expected": { "landingMenu": "Admin" }
+  },
+  {
+    "id": 2,
+    "testDataName": "Purchase_Order_Data",
+    "data": [
+      { "Username": "ABC Vendor", "Password": "1000" }
+    ],
+    "expected": { "vendor": "ABC Vendor" }
+  }
+]

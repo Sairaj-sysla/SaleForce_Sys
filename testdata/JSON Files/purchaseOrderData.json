@@ -1,0 +1,40 @@
+{
+  "profile": "Purchase Order",
+  "version": "1.0",
+  "description": "Test data for Purchase Order E2E flow",
+  "sets": [
+    {
+      "setName": "Set 1",
+      "description": "VMK Dealer - Split AC Purchase",
+      "enabled": true,
+      "supplier": "VMK Dealer",
+      "deliveryAddress": "Bangalore",
+      "purchaseExecutive": "Tessss",
+      "item1": "Split AC",
+      "price": 30000,
+      "quantity": 2
+    },
+    {
+      "setName": "Set 2",
+      "description": "Mohamed Supplier - Split AC Purchase",
+      "enabled": true,
+      "supplier": "Mohamed Supplier",
+      "deliveryAddress": "5",
+      "purchaseExecutive": "qaaz",
+      "item1": "Split air conditioner",
+      "price": 35000,
+      "quantity": 3
+    },
+    {
+      "setName": "Set 3",
+      "description": "Kim - Split AC Purchase",
+      "enabled": true,
+      "supplier": "Kim",
+      "deliveryAddress": "5",
+      "purchaseExecutive": "qaazee",
+      "item1": "Split AC",
+      "price": 28000,
+      "quantity": 4
+    }
+  ]
+}
